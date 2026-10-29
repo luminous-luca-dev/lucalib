@@ -1,63 +1,59 @@
 # lucalib
 機械学習でのAccなどのログをまとめてグラフ出力できるpythonライブラリ。整った関数で簡単に呼び出し出力！
+今のところは、自作の学習履歴を記録してMatplotlibで損失と精度のグラフを描画する小さめのライブラリです。
+機械学習専用のplotライブラリってだけじゃ味気ないので、将来的にもっとライブラリ増やしていけるように名前に汎用性を持たせています。
 
-Matplotlib helper for plotting train/validation loss and accuracy from a
-`history` dictionary. It keeps the original 12 × 7 figure, twin axes, colors,
-line styles, combined legend, and grid.
+## インストール
 
-## Install locally
+GitHubから直接インストールできます。
 
-In a terminal, move into this folder and run:
+    pip install git+https://github.com/luminous-luca-dev/lucalib.git
 
-```bash
-python -m pip install .
-```
+Google Colabでは、セルに次のように入力してください。
 
-For an editable install while developing the package:
+    %pip install git+https://github.com/luminous-luca-dev/lucalib.git
 
-```bash
-python -m pip install -e .
-```
+## 使い方
 
-In Google Colab, upload the package folder to Drive, then run (adjust the path):
+    import numpy as np
+    from lucalib import History, plot_history
 
-```python
-%pip install /content/drive/MyDrive/path/to/lucalib
-```
+    history = History()
 
-## Use
+    # 各エポックの終了時に、平均損失と精度を記録
+    history.append(
+        train_loss=np.mean(losses_train),
+        valid_loss=np.mean(losses_valid),
+        train_acc=train_true_num / train_num,
+        valid_acc=valid_true_num / valid_num,
+    )
 
-```python
-from lucalib import History, plot_history
+    # 学習終了後にグラフを描画・保存
+    fig, saved_path = plot_history(
+        history.as_dict(),
+        lr=lr,
+        n_epochs=n_epochs,
+        batch_size=batch_size,
+        hidden_dims=hid_dim,
+        best_val_acc=max(history["valid_acc"]),
+    )
 
-history = History()
+    print(saved_path)
 
-fig, saved_path = plot_history(
-    history.as_dict(),
-    lr=lr,
-    n_epochs=n_epochs,
-    batch_size=batch_size,
-    hidden_dims=hidden_dims,
-    best_val_acc=best_val_acc,
-    comment="Add He, Adam",
-)
-print(saved_path)
-```
+`History.append()` には、1エポック分の `train_loss`、`valid_loss`、`train_acc`、`valid_acc` を渡します。
 
-After each epoch, add one call to record the epoch's mean metrics:
+グラフは既定で、現在の作業ディレクトリの1つ上にある `record` フォルダーへPNG形式で保存されます。保存先を変える場合は `output_dir` を指定してください。
 
-```python
-history.append(
-    train_loss=np.mean(losses_train),
-    valid_loss=np.mean(losses_valid),
-    train_acc=train_true_num / train_num,
-    valid_acc=valid_true_num / valid_num,
-)
-```
+    fig, saved_path = plot_history(
+        history.as_dict(),
+        output_dir="/content/drive/MyDrive/Colab Notebooks/record",
+    )
 
-The four required history keys are `train_loss`, `valid_loss`, `train_acc`,
-and `valid_acc`. `History.append` takes care of accumulating one value per
-epoch. The plot is saved automatically to `../record` relative to the current
-working directory. Pass `output_dir="some/folder"` to choose another location;
-`show=False` suppresses display. The function returns `(figure, saved_path)`.
-Close the figure after use in long-running scripts with `plt.close(fig)`.
+`plot_history()` は `(fig, saved_path)` を返します。`fig` はMatplotlibの図、`saved_path` は保存された画像のパスです。
+
+## 依存関係
+
+- Python 3.9以上
+- Matplotlib 3.5以上
+
+Matplotlibはインストール時に依存パッケージとしてインストールされます。
