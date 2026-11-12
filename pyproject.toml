@@ -4,11 +4,22 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lucalib"
-version = "0.1.0"
-description = "Plot training and validation loss and accuracy histories."
+version = "0.2.0"
+description = "Training history recording, plotting, and Discord notifications for PyTorch."
 readme = "README.md"
 requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+    { name = "Luca" },
+]
 dependencies = ["matplotlib>=3.5"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[project.urls]
+Homepage = "https://github.com/luminous-luca-dev/lucalib"
+Repository = "https://github.com/luminous-luca-dev/lucalib"
 
 [tool.setuptools.packages.find]
 where = ["src"]
