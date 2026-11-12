@@ -1,6 +1,6 @@
 # lucalib
 
-**English** | [日本語](./README.ja.md)
+**English** | [日本語](./README.ja.md) | [🔰 初心者向け](./QUICKSTART.ja.md)
 
 A Python library for recording, plotting, and notifying training metrics in PyTorch experiments.  
 Logs loss and accuracy per epoch, saves charts with Matplotlib, and sends results to Discord via Webhook — all with a clean, minimal API designed to drop straight into your training loop.
