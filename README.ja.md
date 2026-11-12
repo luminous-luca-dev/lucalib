@@ -1,6 +1,6 @@
 # lucalib
 
-[English](./README.md) | **日本語**
+[English](./README.md) | **日本語** | [🔰 初心者向け](./QUICKSTART.ja.md)
 
 機械学習でのAccなどのログをまとめてグラフ出力できるpythonライブラリ。整った関数で簡単に呼び出し出力！
 今のところは、自作の学習履歴を記録してMatplotlibで損失と精度のグラフを描画する小さめのライブラリです。
