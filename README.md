@@ -1,19 +1,19 @@
 # lucalib
-機械学習でのAccなどのログをまとめてグラフ出力できるpythonライブラリ。整った関数で簡単に呼び出し出力！
-今のところは、自作の学習履歴を記録してMatplotlibで損失と精度のグラフを描画する小さめのライブラリです。
-機械学習専用のplotライブラリってだけじゃ味気ないので、将来的にもっとライブラリ増やしていけるように名前に汎用性を持たせています。
 
-Discordに通知できる関数を追加しました！
+**English** | [日本語](./README.ja.md)
 
-## インストール
+A Python library for recording, plotting, and notifying training metrics in PyTorch experiments.  
+Logs loss and accuracy per epoch, saves charts with Matplotlib, and sends results to Discord via Webhook — all with a clean, minimal API designed to drop straight into your training loop.
 
-GitHub から直接インストールできます。
+## Installation
+
+Install directly from GitHub:
 
 ```bash
 pip install git+https://github.com/luminous-luca-dev/lucalib.git
 ```
 
-Google Colab では次のようにセルに入力してください。
+On Google Colab, run in a cell:
 
 ```python
 %pip install git+https://github.com/luminous-luca-dev/lucalib.git
@@ -21,144 +21,144 @@ Google Colab では次のようにセルに入力してください。
 
 ---
 
-## 公開 API 一覧
+## Public API
 
-| シンボル | 説明 |
+| Symbol | Description |
 |---|---|
-| `History` | エポックごとの loss・accuracy を記録するクラス |
-| `plot_history` | 学習履歴をグラフ化して PNG 保存し `(fig, saved_path)` を返す |
-| `send_discord` | Discord Webhook にテキスト・画像を送信する |
-| `DiscordError` | Discord が非 2xx を返したときに raise される例外 |
+| `History` | Records per-epoch loss and accuracy |
+| `plot_history` | Plots training history, saves as PNG, and returns `(fig, saved_path)` |
+| `send_discord` | Sends a message (and optional images) to a Discord Webhook |
+| `DiscordError` | Exception raised when Discord returns a non-2xx HTTP response |
 
 ---
 
-## 使い方
+## Usage
 
-### 1. 学習履歴の記録
+### 1. Recording Training History
 
 ```python
 from lucalib import History
 
 history = History()
 
-# エポックループ内で呼び出す
+# Call once per epoch inside your training loop
 history.append(
-    train_loss=float(np.mean(losses_train)),   # numpy スカラーや PyTorch テンソルも可
+    train_loss=float(np.mean(losses_train)),   # numpy scalars and PyTorch tensors are accepted
     valid_loss=float(np.mean(losses_valid)),
     train_acc=train_true_num / train_num,
     valid_acc=valid_true_num / valid_num,
 )
 
-# 任意のエポックの値を参照
+# Access recorded values at any time
 best_val_acc = max(history["valid_acc"])
 best_epoch   = history["valid_acc"].index(best_val_acc)
 ```
 
-`History.append()` は `train_loss`、`valid_loss`、`train_acc`、`valid_acc` をキーワード引数で受け取ります。PyTorch テンソルの `.item()` を持つ値も自動的に `float` に変換します。
+`History.append()` accepts `train_loss`, `valid_loss`, `train_acc`, and `valid_acc` as keyword arguments. PyTorch tensors with `.item()` are automatically converted to `float`.
 
 ---
 
-### 2. グラフの生成と保存
+### 2. Generating and Saving a Plot
 
 ```python
 from pathlib import Path
 from lucalib import plot_history
 
-# 変数の意味:
-#   lr          – 実験で使った学習率 (float)
-#   n_epochs    – 総エポック数 (int)
-#   batch_size  – バッチサイズ (int)
-#   hid_dim     – 隠れ層ユニット数など、モデル構造の説明 (int や文字列)
-#   record_dir  – グラフの保存先ディレクトリ (str / Path)
-#   elapsed_time– 学習にかかった秒数 (float)
-#   dropout_rate– ドロップアウト率 (float)
+# Variable reference:
+#   lr          – learning rate used in this experiment (float)
+#   n_epochs    – total number of epochs (int)
+#   batch_size  – batch size (int)
+#   hid_dim     – hidden layer size or model description (int or str)
+#   record_dir  – directory to save the chart (str / Path)
+#   elapsed_time– training duration in seconds (float)
+#   dropout_rate– dropout rate (float)
 
 record_dir = Path("drive/MyDrive/Colab Notebooks/Lecture04/record")
 
 fig, saved_path = plot_history(
-    history.as_dict(),          # History.as_dict() の結果を渡す
+    history.as_dict(),          # pass the result of History.as_dict()
     lr=lr,
     n_epochs=n_epochs,
     batch_size=batch_size,
     hidden_dims=hid_dim,
     best_val_acc=max(history["valid_acc"]),
-    output_dir=record_dir,      # 省略時は作業ディレクトリの ../record/
+    output_dir=record_dir,      # defaults to ../record/ relative to cwd
     comment=f"Amsgrad,DropOut:{dropout_rate},Time:{elapsed_time:.1f}s",
 )
 
-print(saved_path)   # 例: /content/drive/.../record/exp_20260112_153045_123456.png
+print(saved_path)   # e.g. /content/drive/.../record/exp_20260112_153045_123456.png
 ```
 
-`plot_history()` は `(fig, saved_path)` を返します。`saved_path` は `pathlib.Path` なので、後で `send_discord` に渡せます。
+`plot_history()` returns `(fig, saved_path)`. `saved_path` is a `pathlib.Path` and can be passed directly to `send_discord`.
 
 ---
 
-### 3. Discord Webhook 通知
+### 3. Discord Webhook Notifications
 
-#### Webhook URL の設定方法
+#### Setting the Webhook URL
 
-**Google Colab Secrets を使う場合（推奨）:**
+**Using Google Colab Secrets (recommended):**
 
 ```python
 from google.colab import userdata
 import os
 
 os.environ["DISCORD_WEBHOOK_URL"] = userdata.get("DISCORD_WEBHOOK_URL")
-# または webhook_url= 引数に直接渡す
+# or pass it directly via the webhook_url= argument
 ```
 
-**環境変数を使う場合:**
+**Using an environment variable:**
 
 ```bash
 export DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/..."
 ```
 
 > [!CAUTION]
-> Webhook URL はソースコードや README に直接書かないでください。
-> Colab Secrets または環境変数を使用してください。
+> Never hardcode your Webhook URL in source code or README files.
+> Use Colab Secrets or environment variables instead.
 
-#### テキストのみ送信
+#### Text-only message
 
 ```python
 from lucalib import send_discord
 
-send_discord("1回目の学習が完了しました。")
-# webhook_url を省略すると DISCORD_WEBHOOK_URL 環境変数が使われます
+send_discord("Training run 1 complete.")
+# If webhook_url is omitted, the DISCORD_WEBHOOK_URL env var is used automatically.
 ```
 
-#### テキスト＋複数画像を送信
+#### Text + multiple images
 
 ```python
 send_discord(
-    "全実験が完了しました。",
+    "All experiments complete.",
     image_paths=["/path/to/plot1.png", "/path/to/plot2.png"],
-    webhook_url="https://discord.com/api/webhooks/...",  # 省略可
+    webhook_url="https://discord.com/api/webhooks/...",  # optional
     timeout=60,
 )
 ```
 
-#### エラーハンドリング
+#### Error handling
 
 ```python
 from lucalib import send_discord, DiscordError
 import urllib.error
 
 try:
-    send_discord("通知テスト", webhook_url="https://...")
+    send_discord("test notification", webhook_url="https://...")
 except ValueError as e:
-    print(f"URL 未設定: {e}")
+    print(f"No URL configured: {e}")
 except DiscordError as e:
-    print(f"Discord エラー (HTTP {e.status}): {e.body}")
+    print(f"Discord error (HTTP {e.status}): {e.body}")
 except urllib.error.URLError as e:
-    print(f"通信エラー: {e}")
+    print(f"Network error: {e}")
 ```
 
 ---
 
-### 4. 複数実験ループへの組み込み例（Colab 完全例）
+### 4. Full Colab Example — Multi-Experiment Loop
 
 ```python
-# --- セットアップ ---
+# --- Setup ---
 %pip install git+https://github.com/luminous-luca-dev/lucalib.git
 
 import os, time
@@ -167,10 +167,10 @@ from pathlib import Path
 from google.colab import userdata
 from lucalib import History, plot_history, send_discord, DiscordError
 
-# Webhook URL を Colab Secrets から読み込む
+# Load Webhook URL from Colab Secrets
 os.environ["DISCORD_WEBHOOK_URL"] = userdata.get("DISCORD_WEBHOOK_URL")
 
-# 変数定義
+# Configuration
 work_dir     = "drive/MyDrive/Colab Notebooks/DLBasics2026_colab"
 record_dir   = Path(work_dir) / "Lecture04/record"
 n_epochs     = 60
@@ -180,7 +180,7 @@ hid_dim      = 200
 lr_list      = [0.0005, 0.001]
 dropout_list = [0.3]
 
-# --- 実験ループ ---
+# --- Experiment loop ---
 experiment_results = []
 count = 0
 
@@ -190,10 +190,9 @@ for lr in lr_list:
         history = History()
         start_time = time.perf_counter()
 
-        # ここに既存の学習ループをそのまま書く
-        # （エポックループの末尾で history.append(...) を呼ぶだけ）
+        # Your existing training loop goes here — just add history.append() at the end of each epoch
         for epoch in range(n_epochs):
-            # ... 学習処理 ...
+            # ... training code ...
             history.append(
                 train_loss=np.mean(losses_train),
                 valid_loss=np.mean(losses_valid),
@@ -201,7 +200,7 @@ for lr in lr_list:
                 valid_acc=valid_true_num / valid_num,
             )
 
-        # --- 学習終了後: グラフ保存 ---
+        # --- After training: save chart ---
         elapsed_time = time.perf_counter() - start_time
         fig, saved_path = plot_history(
             history.as_dict(),
@@ -214,8 +213,8 @@ for lr in lr_list:
             comment=f"Amsgrad,DropOut:{dropout_rate},Time:{elapsed_time:.1f}s",
         )
 
-        # --- 1実験ごとの通知 ---
-        send_discord(f"{count}回目の学習が {elapsed_time:.1f}s で終了しました。")
+        # --- Notify after each experiment ---
+        send_discord(f"Run {count} finished in {elapsed_time:.1f}s.")
 
         experiment_results.append({
             "lr":           lr,
@@ -226,8 +225,8 @@ for lr in lr_list:
             "png_path":     str(saved_path),
         })
 
-# --- 全実験終了後: 結果まとめ通知 ---
-message = "ますたー、全実験完了しました～\n\n"
+# --- Final summary notification with all plots ---
+message = "All experiments complete!\n\n"
 for i, r in enumerate(experiment_results, start=1):
     message += (
         f"LR: `{r['lr']}` | Dropout: `{r['dropout']}` | {r['elapsed_time']:.1f}s\n"
@@ -241,47 +240,46 @@ send_discord(message, image_paths=image_paths)
 
 ---
 
-## `send_discord` の引数・返り値
+## `send_discord` Reference
 
-| 引数 | 型 | 説明 |
+| Argument | Type | Description |
 |---|---|---|
-| `message` | `str` | 送信するテキスト（必須） |
-| `image_paths` | `list[str \| Path] \| None` | 添付する画像のパス一覧（省略可） |
-| `webhook_url` | `str \| None` | Webhook URL。省略時は `DISCORD_WEBHOOK_URL` 環境変数を使用 |
-| `timeout` | `float` | タイムアウト秒数（デフォルト 60） |
+| `message` | `str` | Text content to send (required) |
+| `image_paths` | `list[str \| Path] \| None` | Paths to image files to attach (optional) |
+| `webhook_url` | `str \| None` | Webhook URL; falls back to `DISCORD_WEBHOOK_URL` env var if omitted |
+| `timeout` | `float` | Request timeout in seconds (default: 60) |
 
-**返り値:** なし (`None`)
+**Returns:** `None`
 
-**例外:**
+**Exceptions:**
 
-| 例外 | 条件 |
+| Exception | Condition |
 |---|---|
-| `ValueError` | URL が引数にも環境変数にも未設定 |
-| `DiscordError` | Discord が非 2xx を返した（`.status` と `.body` 属性あり） |
-| `urllib.error.URLError` | ネットワークエラー・タイムアウト |
+| `ValueError` | No URL provided via argument or environment variable |
+| `DiscordError` | Discord returned a non-2xx status (`.status` and `.body` attributes available) |
+| `urllib.error.URLError` | Network error or timeout |
 
-存在しない画像パスは個別に警告を出してスキップします（例外は raise されません）。
+Missing image paths are skipped with a warning — no exception is raised.
 
 ---
 
-## 依存関係
+## Dependencies
 
-| パッケージ | バージョン | 用途 |
+| Package | Version | Purpose |
 |---|---|---|
 | Python | ≥ 3.9 | — |
-| Matplotlib | ≥ 3.5 | グラフ描画・保存 |
+| Matplotlib | ≥ 3.5 | Chart rendering and saving |
 
-`send_discord` は `urllib`・`json`・`os`・`pathlib` のみ使用し、追加の外部ライブラリは不要です。
+`send_discord` uses only the Python standard library (`urllib`, `json`, `os`, `pathlib`) — no extra packages required.
 
 ---
 
-## テストの実行
+## Running Tests
 
 ```bash
-# リポジトリのルートから
 cd lucalib
-pip install -e .
+pip install -e ".[dev]"
 python -m pytest tests/ -v
 ```
 
-Webhook への実際の HTTP 通信はモックで置き換えられるため、ネットワーク不要で全テストが実行できます。
+All HTTP calls are mocked — no real Webhook is needed to run the test suite.
